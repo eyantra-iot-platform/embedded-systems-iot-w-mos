@@ -1,6 +1,6 @@
 author: e-yantra
-description: Blinking an RGB Led
-version: 1.2
+description: Fine color synthesis on RGB LED with PWM 
+version: 1.0
 
 libs_version: ${mos.version}
 modules_version: ${mos.version}
@@ -23,10 +23,11 @@ filesystem:
 # Uncomment and modify according to your needs:
 
 config_schema:
- - ["blink_app", "o", {title: "Glow RGB LED"}]
- - ["blink_app.time", "i", 1000, {title: "Frequency or time period of a blink"}]
-#  - ["my_app.string_value", "s", "", {title: "Some string value"}]
-#  - ["my_app.int_value", "i", 123, {title: "Some integer value"}]
+ - ["color_synth", "o", {title: "Fine color synthesis on RGB LED with PWM "}]
+ - ["color_synth.freq", "i", 5000, {title: "Frequency of PWM"}]
+ - ["color_synth.r_int", "d", 0.5, {title: "Duty cycle"}]
+ - ["color_synth.g_int", "d", 0.5, {title: "Duty cycle"}]
+ - ["color_synth.b_int", "d", 0.5, {title: "Duty cycle"}]
 
 # These settings get compiled into the C structure, and can be accessed
 # from the C code this way:
@@ -43,7 +44,7 @@ config_schema:
 # level is 2 by default. For this firmware we can override it to 3:
 #
 # config_schema:
-#  - ["blink.period", 500]
+#  - ["debug.level", 3]
 
 libs:
   - origin: https://github.com/mongoose-os-libs/boards
@@ -51,6 +52,7 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-uart
+  - origin: https://github.com/mongoose-os-libs/pwm
 
 # Used by the mos tool to catch mos binaries incompatible with this file format
 manifest_version: 2017-09-29

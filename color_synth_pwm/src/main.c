@@ -1,4 +1,5 @@
 #include "mgos.h"
+#include "mgos_pwm.h"
 
 #define R_PIN 23
 #define G_PIN 22
@@ -54,7 +55,12 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_gpio_set_mode(G_PIN, MGOS_GPIO_MODE_OUTPUT);
   mgos_gpio_set_mode(B_PIN, MGOS_GPIO_MODE_OUTPUT);
 
-  mgos_set_timer(mgos_sys_config_get_blink_app_time(), true, blink, NULL);
- 
+  // mgos_set_timer(mgos_sys_config_get_blink_app_time(), true, blink, NULL);
+  setLED(1, 1, 1);
+  
+  mgos_pwm_set(R_PIN, mgos_sys_config_get_color_synth_freq(), 1.0 - mgos_sys_config_get_color_synth_r_int() / 255.0);
+  mgos_pwm_set(G_PIN, mgos_sys_config_get_color_synth_freq(), 1.0 - mgos_sys_config_get_color_synth_g_int() / 255.0);
+  mgos_pwm_set(B_PIN, mgos_sys_config_get_color_synth_freq(), 1.0 - mgos_sys_config_get_color_synth_b_int() / 255.0);
+
   return MGOS_APP_INIT_SUCCESS;
 }
