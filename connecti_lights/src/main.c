@@ -1,3 +1,5 @@
+#include<string.h>
+#include<stdlib.h>
 #include "mgos.h"
 #include "mgos_mqtt.h"
 
@@ -7,9 +9,12 @@
 #define PRG_BTN 0
 
 void button_handler (int pin, void *arg) {
-  LOG(LL_INFO, ("Toggling"));
+  LOG(LL_INFO, ("Toggling ... "));
   mgos_gpio_set_mode(R_PIN, MGOS_GPIO_MODE_OUTPUT);
   mgos_gpio_toggle(R_PIN);
+  LOG(LL_INFO, ("Going to send a publish message to all connected lights ... "));
+  //  TODO: 
+  mgos_mqtt_pub("v1/devices/me/rpc/request/54", "{}");
   (void) arg;
 }
 
@@ -37,22 +42,8 @@ static void pub(struct mg_connection *c, const char *fmt, ...) {
   LOG(LL_INFO, ("%s -> %s", "v1/devices/me/telemetry", msg));
 }
 
-static void gpio_int_handler(int pin, void *arg) {
-  static double last = 0;
-  double now = mg_time();
-  if (now - last > 0.2) {
-    struct mg_connection *c = mgos_mqtt_get_global_conn();
-    last = now;
-    if (c != NULL) {
-      pub(c, "{type: %Q, pin: %d}", "click", pin);
-    }
-    LOG(LL_INFO, ("Click!"));
-  }
-  (void) arg;
-}
-
 static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data) {
-  struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
+  struct mg_mqtt_message *msg = (struct mg_mqtgt_message *) p;
 
   if (ev == MG_EV_MQTT_CONNACK) {
     LOG(LL_INFO, ("CONNACK: %d", msg->connack_ret_code));
@@ -67,23 +58,19 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
     LOG(LL_INFO, ("Got RPC command: [%.*s]", (int) s->len, s->p));
     /* Our subscription is at QoS 1, we must acknowledge messages sent to us. */
     mg_mqtt_puback(c, msg->message_id);
-    if (json_scanf(s->p, s->len, "{method: %Q, params: {pin: %d}}", &method, &pin) == 1) {
-      /* Set GPIO pin to a given state */
-      mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
-      mgos_gpio_toggle(pin);
-      pub(c, "{type: %Q, pin: %d}", method, pin);
-    } else if (json_scanf(s->p, s->len, "{button: {pin: %d}}", &pin) == 1) {
-      /* Report button press on GPIO pin to a publish topic */
-      mgos_gpio_set_button_handler(pin, MGOS_GPIO_PULL_UP, MGOS_GPIO_INT_EDGE_POS, 50, gpio_int_handler, NULL);
-      pub(c, "{type: %Q, pin: %d}", "button", pin);
+    if (json_scanf(s->p, s->len, "{method: %Q, params: {pin: %d}}", &method, &pin) == 2) {
+      if (strcmp(method, "toggleLED")==0) {
+        /* Set GPIO pin to a given state */
+        mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
+        mgos_gpio_toggle(pin);
+        
+        // TODO:
+        // send a response
+        // v1/devices/me/rpc/response/$request_id
+        // mgos_mqtt_pub(strcat("v1/devices/me/rpc/response/", ), const void *message, size_t len, int qos, bool retain);
+        // pub(c, "{type: %Q, pin: %d}", method, pin);
+      }
     } 
-    // else if (json_scanf(s->p, s->len, "{i2c_read: {addr: %d, len: %d}}",
-    //                       &addr, &len) == 2) {
-     
-    // } else if (json_scanf(s->p, s->len, "{i2c_write: {data: %T}}", &t) == 1) {
-    //   /* Write byte sequence to I2C. First byte is the address */
-      
-    // } 
     else {
       pub(c, "{error: {code: %d, message: %Q}}", 500, "unknown command");
     }
@@ -91,6 +78,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
   (void) user_data;
 }
 
+void 
 enum mgos_app_init_result mgos_app_init(void) {
   // mgos_gpio_set_mode(PRG_BTN, MGOS_GPIO_MODE_INPUT);
   // mgos_gpio_set_int_handler(PRG_BTN, MGOS_GPIO_INT_EDGE_NEG, button_handler, NULL);
