@@ -3,7 +3,7 @@
 ## Overview
 
 Tap on your lantern and all others will glow to your color wherever they are.
-Meant for teaching MQTT, Cloud RPC and Rule Engine.
+Meant for teaching MQTT, Cloud RPC and Rule Engine. Debugged using logger.
 
 ## Mongoose OS MQTT Client
 
@@ -31,7 +31,8 @@ config-get to see).
 
 ## Important Links
 
-https://github.com/cesanta/mongoose-os/blob/master/fw/examples/c_mqtt/src/main.c
-https://mongoose-os.com/docs/mongoose-os/api/net/mqtt.md
 https://cesanta.com/docs/mqtt/api.html
+https://mongoose-os.com/docs/mongoose-os/api/net/mqtt.md
+https://mongoose-os.com/docs/mongoose-os/api/core/cs_dbg.h.md
+https://github.com/cesanta/mongoose-os/blob/master/fw/examples/c_mqtt/src/main.c
 https://github.com/cesanta/mongoose/blob/master/examples/mqtt_client/mqtt_client.c

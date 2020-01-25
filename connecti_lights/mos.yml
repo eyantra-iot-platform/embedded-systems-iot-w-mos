@@ -25,9 +25,9 @@ filesystem:
 config_schema:
  - ["connecti_lights", "o", {title: "Tap on your lantern and all others will glow to your color wherever they are."}]
  - ["mqtt.enable", true]
- - ["mqtt.user", "rqDsqbDAVdyn87DCGtJu"]
  - ["mqtt.server", "thingsboard.e-yantra.org:1883"]
  - ["mqtt.client_id", "sakjbq90w902kjdfomlnoinsa"]
+# TODO:  - ["mqtt.user", "please fill this via rpc"]
 #  - ["connect.bool_value", "b", false, {title: "Some boolean value"}]
 #  - ["my_app.string_value", "s", "", {title: "Some string value"}]
 #  - ["my_app.int_value", "i", 123, {title: "Some integer value"}]
