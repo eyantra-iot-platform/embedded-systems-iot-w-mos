@@ -12,12 +12,29 @@
 #define BOARD_LED 2
 
 void button_handler (int pin, void *arg) {
+  char req_topic[50], req_msg[200];
+  struct json_out jmo = JSON_OUT_BUF(req_msg, sizeof(req_msg));
+
   LOG(LL_INFO, ("Toggling ... "));
   mgos_gpio_set_mode(BOARD_LED, MGOS_GPIO_MODE_OUTPUT);
   mgos_gpio_toggle(BOARD_LED);
   LOG(LL_INFO, ("Going to send a publish message to all connected lights ... "));
-  //  TODO: 
-  // mgos_mqtt_pub("v1/devices/me/rpc/request/54", "{}");
+  
+  //  TODO:
+  // generate random request id topic
+  sprintf(req_topic, "v1/devices/me/rpc/request/%d", (int)((float)rand() / RAND_MAX * (500)));
+  LOG(LL_INFO, ("RPC Request topic %s", req_topic));
+  
+  // create send message
+  json_printf(&jmo, "{method: %Q, params: {r: %d, g: %d, b: %d}}", 
+  "broadcastColor", 255, 0, 0);
+  // uint16_t mgos_mqtt_pub(const char *topic, const void *message, size_t len,
+  //                      int qos, bool retain) {
+  //   return mgos_mqtt_conn_pub(s_conn, topic, mg_mk_str_n(message, len), qos,
+  //                           retain);
+  // }
+  mgos_mqtt_pub(req_topic, req_msg, strlen(req_msg), 1, 0);
+  LOG(LL_INFO, ("Sent %s to %s", req_topic, req_msg));
   (void) arg;
 }
 
