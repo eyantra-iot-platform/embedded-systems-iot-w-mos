@@ -1,20 +1,23 @@
-#include<string.h>
+#include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 #include "mgos.h"
 #include "mgos_mqtt.h"
 
 #define R_PIN 23
 #define G_PIN 22
 #define B_PIN 21
+
 #define PRG_BTN 0
+#define BOARD_LED 2
 
 void button_handler (int pin, void *arg) {
   LOG(LL_INFO, ("Toggling ... "));
-  mgos_gpio_set_mode(R_PIN, MGOS_GPIO_MODE_OUTPUT);
-  mgos_gpio_toggle(R_PIN);
+  mgos_gpio_set_mode(BOARD_LED, MGOS_GPIO_MODE_OUTPUT);
+  mgos_gpio_toggle(BOARD_LED);
   LOG(LL_INFO, ("Going to send a publish message to all connected lights ... "));
   //  TODO: 
-  mgos_mqtt_pub("v1/devices/me/rpc/request/54", "{}");
+  // mgos_mqtt_pub("v1/devices/me/rpc/request/54", "{}");
   (void) arg;
 }
 
@@ -43,7 +46,7 @@ static void pub(struct mg_connection *c, const char *fmt, ...) {
 }
 
 static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data) {
-  struct mg_mqtt_message *msg = (struct mg_mqtgt_message *) p;
+  struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
 
   if (ev == MG_EV_MQTT_CONNACK) {
     LOG(LL_INFO, ("CONNACK: %d", msg->connack_ret_code));
@@ -54,12 +57,15 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
     LOG(LL_INFO, ("Subscription %u acknowledged: [%.*s]", msg->message_id, (int) (msg->topic).len, (msg->topic).p));
   } else if (ev == MG_EV_MQTT_PUBLISH) {
     struct mg_str *s = &msg->payload;
-    int pin, method;
+    int pin;
+    char *method = NULL;
     LOG(LL_INFO, ("Got RPC command: [%.*s]", (int) s->len, s->p));
     /* Our subscription is at QoS 1, we must acknowledge messages sent to us. */
     mg_mqtt_puback(c, msg->message_id);
     if (json_scanf(s->p, s->len, "{method: %Q, params: {pin: %d}}", &method, &pin) == 2) {
+      LOG(LL_INFO, ("Method: %s, Pin: %d", method, pin));
       if (strcmp(method, "toggleLED")==0) {
+        // char *res_topic
         /* Set GPIO pin to a given state */
         mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
         mgos_gpio_toggle(pin);
@@ -78,14 +84,11 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
   (void) user_data;
 }
 
-void 
 enum mgos_app_init_result mgos_app_init(void) {
-  // mgos_gpio_set_mode(PRG_BTN, MGOS_GPIO_MODE_INPUT);
-  // mgos_gpio_set_int_handler(PRG_BTN, MGOS_GPIO_INT_EDGE_NEG, button_handler, NULL);
-  // mgos_gpio_enable_int(PRG_BTN);
+  mgos_gpio_set_mode(PRG_BTN, MGOS_GPIO_MODE_INPUT);
+  mgos_gpio_set_int_handler(PRG_BTN, MGOS_GPIO_INT_EDGE_NEG, button_handler, NULL);
+  mgos_gpio_enable_int(PRG_BTN);
   
-  // mgos_set_timer(1000, false, sendData, NULL);
-  // mgos_mqtt_add_global_handler(ev_handler, NULL);
   mgos_mqtt_add_global_handler(ev_handler, NULL);
   return MGOS_APP_INIT_SUCCESS;
 }
