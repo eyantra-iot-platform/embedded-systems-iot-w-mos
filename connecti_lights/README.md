@@ -23,9 +23,10 @@ using RPC:
 
 ## Notes
 
-1. No messages by default. Only when you connect to Wifi the net and mqtt
+1. 
+2. No messages by default. Only when you connect to Wifi the net and mqtt
 event messages start showing up.
-2. It is possible to have a "backup" server that device will connect to if it
+3. It is possible to have a "backup" server that device will connect to if it
 fails to connect to the primary server. Present under mqtt1 in config (use
 config-get to see).
 

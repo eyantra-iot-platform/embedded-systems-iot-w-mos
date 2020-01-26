@@ -8,7 +8,8 @@
 #define G_PIN 22
 #define B_PIN 21
 
-#define PRG_BTN 0
+// TODO:
+#define PRG_BTN 14
 #define BOARD_LED 2
 
 void button_handler (int pin, void *arg) {
@@ -16,8 +17,8 @@ void button_handler (int pin, void *arg) {
   struct json_out jmo = JSON_OUT_BUF(req_msg, sizeof(req_msg));
 
   LOG(LL_INFO, ("Toggling ... "));
-  mgos_gpio_set_mode(BOARD_LED, MGOS_GPIO_MODE_OUTPUT);
-  mgos_gpio_toggle(BOARD_LED);
+  mgos_gpio_set_mode(R_PIN, MGOS_GPIO_MODE_OUTPUT);
+  mgos_gpio_toggle(R_PIN);
   LOG(LL_INFO, ("Going to send a publish message to all connected lights ... "));
   
   //  TODO:
