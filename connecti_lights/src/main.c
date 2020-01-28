@@ -1,16 +1,37 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+
 #include "mgos.h"
 #include "mgos_mqtt.h"
+#include "mgos_pwm.h"
 
 #define R_PIN 23
 #define G_PIN 22
 #define B_PIN 21
 
 // TODO:
-#define PRG_BTN 14
+#define PRG_BTN 0
 #define BOARD_LED 2
+
+int red_i = 0, green_i = 0, blue_i = 0;
+
+void set_led(int r_lvl, int b_lvl, int g_lvl) {
+  mgos_gpio_write(R_PIN, r_lvl);
+  mgos_gpio_write(G_PIN, b_lvl);
+  mgos_gpio_write(B_PIN, g_lvl);
+}
+
+void glow_off() {
+  LOG(LL_INFO, ("Glowing off"));
+  set_led(1, 1, 1);
+}
+
+void set_colors(int red_i, int green_i, int blue_i) {
+  mgos_pwm_set(R_PIN, mgos_sys_config_get_connecti_lights_freq(), 1.0 - red_i / 255.0);
+  mgos_pwm_set(G_PIN, mgos_sys_config_get_connecti_lights_freq(), 1.0 - green_i / 255.0);
+  mgos_pwm_set(B_PIN, mgos_sys_config_get_connecti_lights_freq(), 1.0 - blue_i / 255.0);
+}
 
 void button_handler (int pin, void *arg) {
   char req_topic[50], req_msg[200];
@@ -27,8 +48,8 @@ void button_handler (int pin, void *arg) {
   LOG(LL_INFO, ("RPC Request topic %s", req_topic));
   
   // create send message
-  json_printf(&jmo, "{method: %Q, params: {r: %d, g: %d, b: %d}}", 
-  "broadcastColor", 255, 0, 0);
+  json_printf(&jmo, "{method: %Q, params: {red_i: %d, green_i: %d, blue_i: %d}}", 
+  "broadcastColor", 0, 255, 0);
   // uint16_t mgos_mqtt_pub(const char *topic, const void *message, size_t len,
   //                      int qos, bool retain) {
   //   return mgos_mqtt_conn_pub(s_conn, topic, mg_mk_str_n(message, len), qos,
@@ -75,8 +96,9 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
     LOG(LL_INFO, ("Subscription %u acknowledged: [%.*s]", msg->message_id, (int) (msg->topic).len, (msg->topic).p));
   } else if (ev == MG_EV_MQTT_PUBLISH) {
     struct mg_str *s = &msg->payload;
-    int pin;
     char *method = NULL;
+    char *intensity_str = NULL;
+    int pin;
     LOG(LL_INFO, ("Got RPC command: [%.*s]", (int) s->len, s->p));
     /* Our subscription is at QoS 1, we must acknowledge messages sent to us. */
     mg_mqtt_puback(c, msg->message_id);
@@ -90,11 +112,31 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
         
         // TODO:
         // send a response
-        // v1/devices/me/rpc/response/$request_id
-        // mgos_mqtt_pub(strcat("v1/devices/me/rpc/response/", ), const void *message, size_t len, int qos, bool retain);
-        // pub(c, "{type: %Q, pin: %d}", method, pin);
+        // mgos_mqtt_pub(strcat("v1/devices/me/rpc/response/$request_id", , const void *message, size_t len, int qos, bool retain);
       }
     } 
+    else if (json_scanf(s->p, s->len, "{method: %Q, params: {red_i: %d, green_i: %d, blue_i: %d}}", 
+    &method, &red_i, &green_i, &blue_i) == 4) {
+      if (strcmp(method, "broadcastColor") == 0) {
+        LOG(LL_INFO, ("Got broadcastColor RPC"));
+        set_colors(red_i, green_i, blue_i);
+      }
+    }
+    else if (json_scanf(s->p, s->len, "{method: %Q, params: %Q}", &method, &intensity_str) == 2) {
+      int intensity = atoi(intensity_str);
+      if (strcmp(method, "setRedIntensity") == 0) {
+        red_i = intensity;
+        set_colors(red_i, green_i, blue_i);
+      }
+      else if (strcmp(method, "setGreenIntensity") == 0) {
+        green_i = intensity;
+        set_colors(red_i, green_i, blue_i);
+      }
+      else if (strcmp(method, "setBlueIntensity") == 0) {
+        blue_i = intensity;
+        set_colors(red_i, green_i, blue_i);
+      }
+    }
     else {
       pub(c, "{error: {code: %d, message: %Q}}", 500, "unknown command");
     }
@@ -103,6 +145,11 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
+  mgos_gpio_set_mode(R_PIN, MGOS_GPIO_MODE_OUTPUT);
+  mgos_gpio_set_mode(G_PIN, MGOS_GPIO_MODE_OUTPUT);
+  mgos_gpio_set_mode(B_PIN, MGOS_GPIO_MODE_OUTPUT);
+  glow_off();
+
   mgos_gpio_set_mode(PRG_BTN, MGOS_GPIO_MODE_INPUT);
   mgos_gpio_set_int_handler(PRG_BTN, MGOS_GPIO_INT_EDGE_NEG, button_handler, NULL);
   mgos_gpio_enable_int(PRG_BTN);
