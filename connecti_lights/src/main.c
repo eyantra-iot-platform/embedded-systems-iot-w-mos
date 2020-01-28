@@ -11,8 +11,8 @@
 #define B_PIN 21
 
 // TODO:
-#define PRG_BTN 0
-#define BOARD_LED 2
+#define PRG_BTN 13
+#define BOARD_LED 18
 
 int red_i = 0, green_i = 0, blue_i = 0;
 
@@ -38,8 +38,8 @@ void button_handler (int pin, void *arg) {
   struct json_out jmo = JSON_OUT_BUF(req_msg, sizeof(req_msg));
 
   LOG(LL_INFO, ("Toggling ... "));
-  mgos_gpio_set_mode(R_PIN, MGOS_GPIO_MODE_OUTPUT);
-  mgos_gpio_toggle(R_PIN);
+  mgos_gpio_set_mode(BOARD_LED, MGOS_GPIO_MODE_OUTPUT);
+  mgos_gpio_toggle(BOARD_LED);
   LOG(LL_INFO, ("Going to send a publish message to all connected lights ... "));
   
   //  TODO:
@@ -50,11 +50,8 @@ void button_handler (int pin, void *arg) {
   // create send message
   json_printf(&jmo, "{method: %Q, params: {red_i: %d, green_i: %d, blue_i: %d}}", 
   "broadcastColor", 0, 255, 0);
-  // uint16_t mgos_mqtt_pub(const char *topic, const void *message, size_t len,
-  //                      int qos, bool retain) {
-  //   return mgos_mqtt_conn_pub(s_conn, topic, mg_mk_str_n(message, len), qos,
-  //                           retain);
-  // }
+  // uint16_t mgos_mqtt_pub(const char *topic, const void *message, 
+  // size_t len, int qos, bool retain)
   mgos_mqtt_pub(req_topic, req_msg, strlen(req_msg), 1, 0);
   LOG(LL_INFO, ("Sent %s to %s", req_topic, req_msg));
   (void) arg;
@@ -89,11 +86,10 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
 
   if (ev == MG_EV_MQTT_CONNACK) {
     LOG(LL_INFO, ("CONNACK: %d", msg->connack_ret_code));
-    // pub(c, "{lohit: %Q}", "started");
     sub(c, "%s", "v1/devices/me/rpc/request/+");
     LOG(LL_INFO, ("Subscribed to RPC Handler --> \"v1/devices/me/rpc/request/+\""));
   } else if (ev == MG_EV_MQTT_SUBACK) {
-    LOG(LL_INFO, ("Subscription %u acknowledged: [%.*s]", msg->message_id, (int) (msg->topic).len, (msg->topic).p));
+    LOG(LL_INFO, ("Subscription %u acknowledged!", msg->message_id));
   } else if (ev == MG_EV_MQTT_PUBLISH) {
     struct mg_str *s = &msg->payload;
     char *method = NULL;
@@ -114,13 +110,11 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
         // send a response
         // mgos_mqtt_pub(strcat("v1/devices/me/rpc/response/$request_id", , const void *message, size_t len, int qos, bool retain);
       }
-    } 
-    else if (json_scanf(s->p, s->len, "{method: %Q, params: {red_i: %d, green_i: %d, blue_i: %d}}", 
-    &method, &red_i, &green_i, &blue_i) == 4) {
-      if (strcmp(method, "broadcastColor") == 0) {
-        LOG(LL_INFO, ("Got broadcastColor RPC"));
-        set_colors(red_i, green_i, blue_i);
-      }
+    }
+    else if (json_scanf(s->p, s->len, "{method: setColor, params: {red_i: %d, green_i: %d, blue_i: %d}}", 
+    &red_i, &green_i, &blue_i) == 3) {
+      LOG(LL_INFO, ("Got setColor RPC"));
+      set_colors(red_i, green_i, blue_i);
     }
     else if (json_scanf(s->p, s->len, "{method: %Q, params: %Q}", &method, &intensity_str) == 2) {
       int intensity = atoi(intensity_str);
