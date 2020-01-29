@@ -144,10 +144,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_gpio_set_mode(B_PIN, MGOS_GPIO_MODE_OUTPUT);
   glow_off();
 
-  mgos_gpio_set_mode(PRG_BTN, MGOS_GPIO_MODE_INPUT);
-  mgos_gpio_set_int_handler(PRG_BTN, MGOS_GPIO_INT_EDGE_NEG, button_handler, NULL);
-  mgos_gpio_enable_int(PRG_BTN);
-  
+  mgos_gpio_set_button_handler(PRG_BTN, MGOS_GPIO_PULL_NONE, MGOS_GPIO_INT_EDGE_NEG, 50, button_handler, NULL);
   mgos_mqtt_add_global_handler(ev_handler, NULL);
   return MGOS_APP_INIT_SUCCESS;
 }
