@@ -2,7 +2,7 @@
 
 ## Overview
 
-![alt text](/assets/flow_meter.jpg "Flow Meter" | width=100)
+![alt text](./assets/flow_meter.jpg "Flow Meter" | width=100)
 
 The flow meter generates pulses on the output signal pin and we can count these pulses to
 determine the quantity of fluid passing through it.
