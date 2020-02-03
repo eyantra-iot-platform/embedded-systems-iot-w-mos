@@ -31,27 +31,12 @@ config_schema:
  - ["i2c.enable", true]
  - ["i2c.sda_gpio", 21]
  - ["i2c.scl_gpio", 22]
- - ["ssd1306", "o", {title: "SSD1306 Settings"}]
- - ["ssd1306.enable", "b", true, {title: "Enable SSD1306"}]
- - ["ssd1306.width", "i", 128, {title: "Screen width"}]
- - ["ssd1306.height", "i", 64, {title: "Screen height"}]
- - ["ssd1306.address", "i", 0x3c, {title: "Screen controller I2C address"}]
- - ["ssd1306.col_offset", "i", 0, {title: "Screen column offset; some smaller screens need this"}]
- - ["ssd1306.com_pins", "i", 0x12, {title: "Screen COM pins configuration, depends on physical attachemnt of the panel to the chip; 0x02, 0x12, 0x22 or 0x32 are valid values"}]
- - ["ssd1306.i2c", "o", {title: "SSD1306 I2C settings"}]
- - ["ssd1306.i2c.enable", "b", true, {title: "Enable SSD1306-specific I2C configuration"}]
- - ["ssd1306.i2c.freq", "i", 400000, {title: "Clock frequency"}]
- - ["ssd1306.i2c.unit_no", "i", 0, {title: "Which hardware unit to use, 0 or 1"}]
- - ["ssd1306.i2c.debug", "b" , false, {title: "Debug I2C bus activity"}]
- - ["ssd1306.i2c.sda_gpio", "i", 5, {title: "GPIO to use for SDA"}]
- - ["ssd1306.i2c.scl_gpio", "i", 4, {title: "GPIO to use for SCL"}]
- - ["ssd1306.rst_gpio", "i", -1, {title: "optional GPIO to use for RST"}]
- - ["ssd1306.i2c.enable", false]  # Use system bus.
- - ["ssd1306.enable", true]
- - ["ssd1306.width", 128]
- - ["ssd1306.height", 64]
- - ["ssd1306.col_offset", 2]
- - ["ssd1306.com_pins", 18]
+ - ["sh1106.i2c.enable", false]  # Use system bus.
+ - ["sh1106.enable", true]
+ - ["sh1106.width", 128]
+ - ["sh1106.height", 64]
+ - ["sh1106.col_offset", 2]
+ - ["sh1106.com_pins", 18]
 
 # These settings get compiled into the C structure, and can be accessed
 # from the C code this way:
@@ -77,6 +62,8 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/i2c
+  - origin: https://github.com/manjrekarom/sh1106
+    name: sh1106
 
 # Used by the mos tool to catch mos binaries incompatible with this file format
 manifest_version: 2017-09-29
