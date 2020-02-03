@@ -1,4 +1,4 @@
-# Interfacing SH 1106 OLED with ESP32 
+# Interfacing SH1106 OLED with ESP32
 
 ## Overview
 
@@ -8,4 +8,4 @@ apps from scratch.
 ## Documentation
 
 1. https://www.velleman.eu/downloads/29/infosheets/sh1106_datasheet.pdf
-2.  
+2. https://mongoose-os.com/docs/mongoose-os/api/core/i2c.md

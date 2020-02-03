@@ -198,7 +198,7 @@ void mgos_ssd1306_refresh (struct mgos_ssd1306 *oled, bool force) {
     page_end = oled->refresh_bottom / 8;
     for (uint8_t i = page_start; i <= page_end; ++i) {
       _command (oled, 0x00 | ((oled->col_offset + oled->refresh_left) & 0x0f));        // Send starting col address lower 4
-      _command (oled, 0x10 | (((oled->col_offset + oled->refresh_left) & 0xf0) >> 4));  // Send starting col address higher 4
+      _command (oled, 0x10 | (((oled->col_offset + oled->refresh_left) >> 4) & 0xf0));  // Send starting col address higher 4
       uint16_t start = i * oled->width + oled->refresh_left;
       uint16_t len = oled->refresh_right - oled->refresh_left + 1;
       _command (oled, 0xB0 | i);
@@ -559,9 +559,13 @@ uint8_t mgos_ssd1306_draw_char (struct mgos_ssd1306 *oled, uint8_t x, uint8_t y,
   return (oled->font->char_descriptors[c].width);
 }
 
+/*
+Multi-line support
+*/
 uint8_t mgos_ssd1306_draw_string_color (struct mgos_ssd1306 * oled, uint8_t x, uint8_t y, const char *str,
                                         mgos_ssd1306_color_t foreground, mgos_ssd1306_color_t background) {
-  uint8_t t = x;
+  uint8_t i = 0, t = x;
+  uint8_t width_inc = oled->width;
 
   if (oled == NULL)
     return 0;
@@ -577,9 +581,14 @@ uint8_t mgos_ssd1306_draw_string_color (struct mgos_ssd1306 * oled, uint8_t x, u
     ++str;
     if (*str)
       x += oled->font->c;
+    if (x >= width_inc) {
+      i += x;
+      x = t;
+      y += 10;
+    }
   }
 
-  return (x - t);
+  return (i - t);
 }
 
 uint8_t mgos_ssd1306_draw_string (struct mgos_ssd1306 * oled, uint8_t x, uint8_t y, const char *str) {
@@ -643,25 +652,29 @@ void mgos_ssd1306_invert_display (struct mgos_ssd1306 *oled, bool invert) {
     _command (oled, 0xa6);      // SSD1306_NORMALDISPLAY
 }
 
-void mgos_ssd1306_rotate_display (struct mgos_ssd1306 *oled, bool alt) {
-  if (oled == NULL)
-    return;
+/*
+  TODO: Doesn't work in SH 1106. 
+*/
+// void mgos_ssd1306_rotate_display (struct mgos_ssd1306 *oled, bool alt) {
+//   if (oled == NULL)
+//     return;
 
-  if (alt) {
-    _command (oled, 0xA1);
-    _command (oled, 0xC8);
-  } else {
-    _command (oled, 0xA0);
-    _command (oled, 0xC0);
-  }
-}
+//   if (alt) {
+//     _command (oled, 0xA1);
+//     _command (oled, 0xC8);
+//   } else {
+//     _command (oled, 0xA0);
+//     _command (oled, 0xC0);
+//   }
+// }
 
 void mgos_ssd1306_flip_display (struct mgos_ssd1306 *oled, bool horizontal, bool vertical) {
   if (oled == NULL)
     return;
 
-  _command (oled, 0xda);
-  _command (oled, oled->com_pins | (horizontal << 5));
+  // _command (oled, 0xda);
+  // _command (oled, oled->com_pins | (horizontal << 5));
+  _command (oled, horizontal ? 0xa0 : 0xa1);
   _command (oled, vertical ? 0xc0 : 0xc8);
 }
 
