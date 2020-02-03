@@ -4,59 +4,71 @@
 
 static char method_code(char* method) {
   // every unique device gets a unique tens place bit
-  // for example 0X for Valve, 1X for flow meter, 2X for RGB LED
+  // for example 1X for Valve, 2X for flow meter, 3X for RGB LED
   if (strcmp(method, "getValve") == 0) {
-    return 0;
-  }
-  else if (strcmp(method, "setValve") == 0) {
-    return 1;
-  }
-  else if (strcmp(method, "toggleValve") == 0) {
-    return 2;
-  }
-  else if (strcmp(method, "getFlow") == 0) {
     return 10;
   }
-  else if (strcmp(method, "setRed") == 0) {
+  else if (strcmp(method, "setValve") == 0) {
+    return 11;
+  }
+  else if (strcmp(method, "toggleValve") == 0) {
+    return 12;
+  }
+  else if (strcmp(method, "getFlow") == 0) {
     return 20;
   }
+  else if (strcmp(method, "setRed") == 0) {
+    return 30;
+  }
   else if (strcmp(method, "setGreen") == 0) {
-    return 21;
+    return 31;
   }
   else if (strcmp(method, "setBlue") == 0) {
-    return 22;
+    return 32;
   }
   return -1;
 }
 
-static char* encode_params(char* data_type, void* value) {
+static void encode_params(char* param, char* data_type, void* value) {
   // every param has a type and a value
   // supported types
   // int -> i; double -> d; string -> s
   // separator is a hash
   // order of parameters matters
-  if (strcmp(data_type, "int")) {
-    int *int_val = (int*)value;
-    return sprintf("s%d", *int_val);
+  if (strcmp(data_type, "int") == 0) {
+    int* int_val = (int*)value;
+    sprintf(param, "i%d", *int_val);
   }
-  else if (strcmp(data_type, "double")) {
-    int *dbl_val = (double*)value;
-    return strcat("s", *dbl_val);
+  else if (strcmp(data_type, "double") == 0) {
+    double* dbl_val = (double*)value;
+    sprintf(param, "d%lf", *dbl_val);
   }
-  else if (strcmp(data_type, "string")) {
-    char *conv_val = (char*)value;
-    return strcat("s", conv_val);
+  else if (strcmp(data_type, "string") == 0) {
+    char* conv_val = (char*)value;
+    sprintf(param, "s%s", conv_val);
   }
 }
 
+static void create_uart_message(char *message, char method, char* params) {
+  // # is the starting character
+  // @ marks the end
+  sprintf(message, "#%c%s@", method, params);
+}
 
 static void timer_cb(void *arg) {
   /*
    * Note: do not use mgos_uart_write to output to console UART (0 in our case).
    * It will work, but output may be scrambled by console debug output.
    */
-  static int seq = 0;
-  mgos_uart_printf(UART_NO, "Hello, UART%d! %d from ESP1 \r\n", UART_NO, seq++);
+  char message[50], params[20];
+  int intensity = 125; 
+  encode_params(params, "int", &intensity);
+  create_uart_message(message, 31, params);
+  
+  LOG(LL_INFO, ("Message to be sent: %s", message));
+
+  mgos_uart_printf(UART_NO, message);
+  
   (void) arg;
 }
 
@@ -112,12 +124,12 @@ enum mgos_app_init_result mgos_app_init(void) {
   ucfg.num_data_bits = 8;
   ucfg.parity = MGOS_UART_PARITY_NONE;
   ucfg.stop_bits = MGOS_UART_STOP_BITS_1;
-  ucfg.tx_fc_type = MGOS_UART_FC_SW;
-  ucfg.rx_fc_type = MGOS_UART_FC_SW;
+  // ucfg.tx_fc_type = MGOS_UART_FC_SW;
+  // ucfg.rx_fc_type = MGOS_UART_FC_SW;
   
   // overriding default GPIOs
-  ucfg.dev.rx_gpio = 3;
-  ucfg.dev.tx_gpio = 1;
+  ucfg.dev.rx_gpio = 33;
+  ucfg.dev.tx_gpio = 32;
 
   if (!mgos_uart_configure(UART_NO, &ucfg)) {
     return MGOS_APP_INIT_ERROR;
