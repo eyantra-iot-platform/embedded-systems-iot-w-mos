@@ -50,6 +50,10 @@ void encode_params(char* param, char* data_type, void* value) {
   }
 }
 
+void concat_params(char* result, char* param1, char* param2) {
+  sprintf(result, "%s,%s", param1, param2);
+}
+
 void create_uart_request(char *message, char method, char* params) {
   // # is the starting character
   // @ marks the end

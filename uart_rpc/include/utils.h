@@ -11,7 +11,7 @@ void encode_params(char* param, char* data_type, void* value);
 /*
 Concatenate params with a delimeter
 */
-void concat_params(char* param1, char* param2);
+void concat_params(char* result, char* param1, char* param2);
 
 /*
 Creates a request message for UART-RPC that takes method code and encoded params

@@ -27,10 +27,27 @@ void test_function_encode_params(void) {
     char str[10] = "hello";
     encode_params(param, "int", &val);
     TEST_ASSERT_EQUAL_STRING("i51", param);
+    
+    val = -7113;
+    encode_params(param, "int", &val);
+    TEST_ASSERT_EQUAL_STRING("i-7113", param);
     encode_params(param, "double", &db_val);
     TEST_ASSERT_EQUAL_STRING("d-1.256", param);
     encode_params(param, "string", str);
     TEST_ASSERT_EQUAL_STRING("shello", param);
+}
+
+void test_function_concat_params() {
+    char result[100];
+    char param1[50] = "i755";
+    char param2[50] = "sabcaojws";
+    char param3[50] = "d-15.275";
+
+    concat_params(result, param1, param2);
+    TEST_ASSERT_EQUAL_STRING("i755,sabcaojws", result);
+
+    concat_params(result, result, param3);
+    TEST_ASSERT_EQUAL_STRING("i755,sabcaojws,d-15.275", result);
 }
 
 // not needed when using generate_test_runner.rb
