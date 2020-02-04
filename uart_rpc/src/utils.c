@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "include/utils.h"
+#include "utils.h"
 
 char code_method(char* method_name) {
   // every unique device gets a unique tens place bit
@@ -26,6 +26,9 @@ char code_method(char* method_name) {
   }
   else if (strcmp(method_name, "setBlue") == 0) {
     return 32;
+  }
+  else if (strcmp(method_name, "setColor") == 0) {
+    return 33;
   }
   return -1;
 }
