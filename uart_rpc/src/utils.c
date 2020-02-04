@@ -54,7 +54,7 @@ void concat_params(char* result, char* param1, char* param2) {
   sprintf(result, "%s,%s", param1, param2);
 }
 
-void create_uart_request(char *message, char method, char* params) {
+void create_rpc_request(char *message, char method, char* params) {
   // # is the starting character
   // @ marks the end
   sprintf(message, "#%c%s@", method, params);
