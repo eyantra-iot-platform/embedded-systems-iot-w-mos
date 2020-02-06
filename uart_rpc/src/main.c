@@ -9,16 +9,8 @@ static void timer_cb(void *arg) {
    * Note: do not use mgos_uart_write to output to console UART (0 in our case).
    * It will work, but output may be scrambled by console debug output.
    */
-  char message[50], params[20], final_params[100];
-  int intensity;
-
-  // NEED to resolve this
-  // intensity = 200; 
-  // encode_params(params, "int", &intensity);
-  // intensity = 15;
-  // (params, "int", &intensity);
-  // intensity = 150;
-  // encode_params(params, "int", &intensity);
+  char message[50]; //, params[20], final_params[100];
+  // int intensity;
   
   create_rpc_request(message, code_method("getFlow"), "i200,i15,i150");
 
@@ -31,27 +23,69 @@ static void timer_cb(void *arg) {
 static void uart_dispatcher(int uart_no, void *arg) {
   // memory bufffers grow when needed. You can enter data at the end
   // or at any arbitrary positions.
-  static char *start, *end, *le;
+  static char *old_start, *new_start, *end; //, *le;
   static char message[200];
   static struct mbuf lb = {0};
+  int END_FLAG = 0;
+
+  char parts[200];
 
   assert(uart_no == UART_NO);
   size_t rx_av = mgos_uart_read_avail(uart_no);
   if (rx_av == 0) return;
   mgos_uart_read_mbuf(uart_no, &lb, rx_av);
   LOG(LL_INFO, ("Received: %.*s", (int) rx_av, lb.buf));
-  mbuf_remove(&lb, rx_av);
+  // mbuf_remove(&lb, rx_av);
   /* Handle all the wonderful possibilities of different line endings. */
   struct mg_str b = mg_mk_str_n(lb.buf, lb.len);
 
-  if (start == NULL)
-    start = (char *) mg_strchr(b, '#');
+  new_start = (char *) mg_strchr(b, '#');
+  end = (char *) mg_strchr(b, '@');
+  // le = (char *) mg_strchr(b, '\0');
+
+  if (end == NULL) {
+    // points to the end char or one plus the length of read bytes
+    end = lb.buf + rx_av;
+  } else {
+    if (new_start != NULL || old_start != NULL)
+      END_FLAG = 1;
+  }
+
+  LOG(LL_INFO, ("Reached after end_ptr check!"));
+  if (new_start != NULL) {
+    if (end < new_start) {
+      if (old_start != NULL) {
+        strncpy(parts, b.p, (end - b.p));
+        strcat(message, parts);
+        mbuf_remove(&lb, (end - lb.buf));
+      }
+    }
+    while (new_start <= end && new_start != NULL) {
+      LOG(LL_INFO, ("New string %.*s", (int)b.len, b.p));
+      old_start = new_start;
+      b = mg_mk_str_n(new_start + 1, lb.len - (new_start - b.p));
+      
+      new_start = (char *) mg_strchr(b, '#');
+    }
+    // from old_start to end
+    strncpy(parts, old_start + 1, end - old_start - 1);
+    strcat(message, parts);
+  } else {
+    if (old_start != NULL) {
+      // from buffer start to end
+      strncpy(parts, b.p, end - b.p);
+      strcat(message, parts);
+    }
+  }
   
-  if (end == NULL)
-    end = (char *) mg_strchr(b, '@');
-  
-  le = (char *) mg_strchr(b, '\0');
-  
+  if (END_FLAG) {
+    LOG(LL_INFO, ("Parsed message: %s", message));
+    old_start = NULL;
+    new_start = NULL;
+    end = NULL;
+    message[0] = '\0';
+    END_FLAG = 0;
+  }
   // if (start != NULL && end != NULL) {
   //   size_t llen = end - start;
   //   if (llen == 0) return;
@@ -80,7 +114,8 @@ static void uart_dispatcher(int uart_no, void *arg) {
   //   mgos_uart_printf(UART_NO, "You said '%.*s'.\r\n", (int) line.len, line.p);
   // }
   /* Finally, remove the line data from the buffer. */
-  
+  // size upto end
+  mbuf_remove(&lb, (end - lb.buf));
   (void) arg;
 }
 
