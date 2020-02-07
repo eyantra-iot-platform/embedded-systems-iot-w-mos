@@ -51,6 +51,8 @@ enum mgos_app_init_result mgos_app_init(void) {
     LOG(LL_INFO, ("SAM Config failed!"));
   }
   
+  mgos_gpio_setup_input(IRQ, MGOS_GPIO_PULL_UP);
   mgos_gpio_set_int_handler(IRQ, MGOS_GPIO_INT_EDGE_NEG, read_rfid, pn532);
+  mgos_gpio_enable_int(IRQ);
   return MGOS_APP_INIT_SUCCESS;
 }
