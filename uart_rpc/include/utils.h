@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <string.h>
+
 /*
 Generates a UART-RPC method character code for a given method name
 */
@@ -24,3 +27,7 @@ void create_rpc_request(char* message, char method, char* params);
 Parse a response message from UART-RPC
 */
 // void parse_uart_response(char* message, char method, char* params);
+
+/* Parse UART-RPC request message */
+int parse_rpc_request(char* method, char* params, const char* message);
+
