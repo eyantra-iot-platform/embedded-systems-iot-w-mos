@@ -1,15 +1,9 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include <stdio.h>
 #include <string.h>
-
-/*
-Generates a UART-RPC method character code for a given method name
-*/
-char code_method (char* method_name);
-
-/*
-Encode parameters of a UART-RPC message, both request and response
-*/
-void encode_params(char* param, char* data_type, void* value);
+#include <stdarg.h>
 
 /*
 Concatenate parameters of a UART-RPC message, both request and response,
@@ -23,11 +17,20 @@ between # and @.
 */
 void create_rpc_request(char* message, char method, char* params);
 
+/* Create UART-RPC response message */
+void create_rpc_response(char* response, const char method, const char* params);
+
+/*
+Encode parameters of a UART-RPC message, both request and response
+*/
+void encode_params(char* params, int should_concat, const char* fmt, ...);
+
+/* Parse UART-RPC request message */
+int parse_rpc_request(char method, char* params, const char* message);
+
 /*
 Parse a response message from UART-RPC
 */
-// void parse_uart_response(char* message, char method, char* params);
+int parse_rpc_response(char method, char* params, const char* message);
 
-/* Parse UART-RPC request message */
-int parse_rpc_request(char* method, char* params, const char* message);
-
+#endif

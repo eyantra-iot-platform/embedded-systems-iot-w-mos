@@ -4,19 +4,92 @@
 
 #define UART_NO 1
 
+int i = 0;
+const int n_colors = 4;
+
+char code_method(char* method_name) {
+  // every unique device gets a unique tens place bit
+  // for example 1X for Valve, 2X for flow meter, 3X for RGB LED
+  if (strcmp(method_name, "getValve") == 0) {
+    return 10;
+  }
+  else if (strcmp(method_name, "setValve") == 0) {
+    return 11;
+  }
+  else if (strcmp(method_name, "toggleValve") == 0) {
+    return 12;
+  }
+  else if (strcmp(method_name, "getFlow") == 0) {
+    return 65; // CHANGED
+  }
+  else if (strcmp(method_name, "setRed") == 0) {
+    return 30;
+  }
+  else if (strcmp(method_name, "setGreen") == 0) {
+    return 31;
+  }
+  else if (strcmp(method_name, "setBlue") == 0) {
+    return 32;
+  }
+  else if (strcmp(method_name, "setColor") == 0) {
+    return 33;
+  }
+  return -1;
+}
+
+void setLED(int r_lvl, int g_lvl, int b_lvl) {
+  char message[50], params[50]; //, params[20], final_params[100];
+  // int intensity;
+  encode_params(params, 0, "%d%d%d", r_lvl, g_lvl, b_lvl);
+  create_rpc_request(message, code_method("setColor"), params);
+
+  LOG(LL_INFO, ("Message to be sent: %s", message));
+  mgos_uart_printf(UART_NO, message);
+}
+
+void glowRed() {
+  LOG(LL_INFO, ("Glowing red"));
+  setLED(255, 0, 0);
+}
+
+void glowGreen() {
+  LOG(LL_INFO, ("Glowing green"));
+  setLED(0, 255, 0);
+}
+
+void glowBlue() {
+  LOG(LL_INFO, ("Glowing blue"));
+  setLED(0, 0, 255);
+}
+
+void glowOff() {
+  LOG(LL_INFO, ("Glowing off"));
+  setLED(0, 0, 0);
+}
+
+void blink() {
+  int color = i++ % n_colors;
+  if (color == 0) {
+    glowRed();
+  }
+  else if (color == 1) {
+    glowGreen();
+  }
+  else if (color == 2) {
+    glowBlue();
+  }
+  else if (color == 3) {
+    glowOff();
+  }
+}
+
 static void timer_cb(void *arg) {
   /*
    * Note: do not use mgos_uart_write to output to console UART (0 in our case).
    * It will work, but output may be scrambled by console debug output.
    */
-  char message[50]; //, params[20], final_params[100];
-  // int intensity;
   
-  create_rpc_request(message, code_method("getFlow"), "i200,i15,i150");
-
-  LOG(LL_INFO, ("Message to be sent: %s", message));
-
-  mgos_uart_printf(UART_NO, message);
+  blink();
   (void) arg;
 }
 
@@ -66,7 +139,9 @@ static void uart_dispatcher(int uart_no, void *arg) {
     LOG(LL_INFO, ("Received RPC message: %s", message));
 
     char method, params[200];
-    parse_rpc_request(&method, params, message);
+    // default method
+    method='0';
+    parse_rpc_response(method, params, message);
 		
 		if (method == 65) {
       int flow_readings;
