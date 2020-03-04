@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <mgos.h>
-#include "utils.h"
+#include "mos_rpc_utils.h"
 
 /*
 Concatenate parameters of a UART-RPC message, both request and response,

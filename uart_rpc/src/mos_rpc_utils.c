@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "mos_rpc_utils.h"
 
 void concat_params(char* result, char* param1, char* param2) {
   sprintf(result, "%s,%s", param1, param2);
