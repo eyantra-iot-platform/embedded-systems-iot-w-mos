@@ -89,6 +89,16 @@ static void timer_cb(void *arg) {
    * It will work, but output may be scrambled by console debug output.
    */
   
+  // char message[50] = "#Ad255@"; //, params[50]; //, params[20], final_params[100];
+  // char message[50], params[50]; //, params[20], final_params[100];
+  // int intensity;
+  // encode_params(params, 0, "%d%d%d", r_lvl, g_lvl, b_lvl);
+  // encode_params(params, 0, "%d%d%d", r_lvl, g_lvl, b_lvl);
+  // create_rpc_request(message, code_method("getFlow"), "");
+
+  // LOG(LL_INFO, ("Message to be sent: %s", message));
+  // mgos_uart_printf(UART_NO, message);
+
   blink();
   (void) arg;
 }
@@ -141,7 +151,7 @@ static void uart_dispatcher(int uart_no, void *arg) {
     char method, params[200];
     // default method
     method='0';
-    parse_rpc_response(method, params, message);
+    parse_rpc_response(&method, params, message);
 		
 		if (method == 65) {
       int flow_readings;

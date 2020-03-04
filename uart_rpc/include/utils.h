@@ -26,11 +26,11 @@ Encode parameters of a UART-RPC message, both request and response
 void encode_params(char* params, int should_concat, const char* fmt, ...);
 
 /* Parse UART-RPC request message */
-int parse_rpc_request(char method, char* params, const char* message);
+int parse_rpc_request(char* method, char* params, const char* message);
 
 /*
 Parse a response message from UART-RPC
 */
-int parse_rpc_response(char method, char* params, const char* message);
+int parse_rpc_response(char* method, char* params, const char* message);
 
 #endif
