@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <mgos.h>
+#include "utils.h"
 
 /*
 Concatenate parameters of a UART-RPC message, both request and response,
@@ -32,5 +34,10 @@ int parse_rpc_request(char* method, char* params, const char* message);
 Parse a response message from UART-RPC
 */
 int parse_rpc_response(char* method, char* params, const char* message);
+
+/*
+Fetch RPC request
+*/
+int fetch_rpc_response(char* message, int uart_no);
 
 #endif
