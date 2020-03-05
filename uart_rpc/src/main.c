@@ -141,13 +141,15 @@ static void uart_dispatcher(int uart_no, void *arg) {
 		return;
 
 	parse_rpc_response(&method, params, message);
-  
+	LOG(LL_INFO, ("Parsed Method: %c, Params: %s", method, params));
+
 	if (method == 65) {
-		int flow_readings;
-		if (sscanf(params, "d%d", &flow_readings) == 1) {
-			LOG(LL_INFO, ("Flow readings %d", flow_readings));
+		double flow_readings;
+		if (sscanf(params, "lf%lf", &flow_readings) == 1) {
+			LOG(LL_INFO, ("Flow readings %lf", flow_readings));
 		}
 	}
+
 	// else if (method == 30) {
 	// 	int red_i;
 	// 	if (sscanf(params, "i%d", &red_i) == 1) {

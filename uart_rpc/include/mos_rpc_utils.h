@@ -17,7 +17,7 @@ void concat_params(char* result, char* param1, char* param2);
 Creates a request message for UART-RPC that takes method code and encoded params
 between # and @.
 */
-void create_rpc_request(char* message, char method, char* params);
+void create_rpc_request(char* message, char method, int req_id, char* params);
 
 /* Create UART-RPC response message */
 void create_rpc_response(char* response, const char method, const char* params);
