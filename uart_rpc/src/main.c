@@ -2,6 +2,7 @@
 #include "mgos.h"
 #include "mgos_mqtt.h"
 
+#include "rpc_common.h"
 #include "mos_rpc_utils.h"
 
 #define UART_NO 1
@@ -45,66 +46,66 @@ char code_method(char* method_name) {
 	return -1;
 }
 
-void set_colors(int r_lvl, int g_lvl, int b_lvl) {
+void set_colors(int req_id, int r_lvl, int g_lvl, int b_lvl) {
   char message[50], params[50]; //, params[20], final_params[100];
   // int intensity;
   encode_params(params, 0, "%d%d%d", r_lvl, g_lvl, b_lvl);
-  create_rpc_request(message, code_method("setColor"), params);
+  create_rpc_request(message, code_method("setColor"), req_id, params);
 
   LOG(LL_INFO, ("Message to be sent: %s", message));
   mgos_uart_printf(UART_NO, message);
 }
 
-void glow_red() {
+void glow_red(int req_id) {
 	LOG(LL_INFO, ("Glowing red"));
-	set_colors(255, 0, 0);
+	set_colors(req_id, 255, 0, 0);
 }
 
-void glow_green() {
+void glow_green(int req_id) {
 	LOG(LL_INFO, ("Glowing green"));
-	set_colors(0, 255, 0);
+	set_colors(req_id, 0, 255, 0);
 }
 
-void glow_blue() {
+void glow_blue(int req_id) {
 	LOG(LL_INFO, ("Glowing blue"));
-	set_colors(0, 0, 255);
+	set_colors(req_id, 0, 0, 255);
 }
 
-void glow_off() {
+void glow_off(int req_id) {
 	LOG(LL_INFO, ("Glowing off"));
-	set_colors(0, 0, 0);
+	set_colors(req_id, 0, 0, 0);
 }
 
-void blink() {
+void blink(int req_id) {
 	int color = i++ % n_colors;
 	if (color == 0) {
-    	glow_red();
+    	glow_red(req_id);
   	}
 	else if (color == 1) {
-		glow_green();
+		glow_green(req_id);
 	}
 	else if (color == 2) {
-		glow_blue();
+		glow_blue(req_id);
 	}
 	else if (color == 3) {
-		glow_off();
+		glow_off(req_id);
 	}
 }
 
-void get_flow() {
+void get_flow(int req_id) {
 	char message[50]; //, params[20], final_params[100];
 	// int intensity;
-	create_rpc_request(message, code_method("getFlow"), "");
+	create_rpc_request(message, code_method("getFlow"), req_id, "");
 
 	LOG(LL_INFO, ("Message to be sent: %s", message));
 	mgos_uart_printf(UART_NO, message);
 }
 
-void lcd_print(char* lcd_message) {
+void lcd_print(int req_id, char* lcd_message) {
 	char message[50], params[50]; //, params[20], final_params[100];
 	// int intensity;
 	encode_params(params, 0, "%s", lcd_message);
-	create_rpc_request(message, code_method("lcdPrint"), params);
+	create_rpc_request(message, code_method("lcdPrint"), req_id, params);
 
 	LOG(LL_INFO, ("Message to be sent: %s", message));
 	mgos_uart_printf(UART_NO, message);
@@ -135,27 +136,32 @@ static void uart_dispatcher(int uart_no, void *arg) {
 	// or at any arbitrary positions.
 	static char message[200] = {'\0'};
 	char method, params[200];
+	int req_id;
 	// default method
 	int status = fetch_rpc_response(message, UART_NO);
-	if (!status)
-		return;
+	if (!status) return;
 
-	parse_rpc_response(&method, params, message);
-	LOG(LL_INFO, ("Parsed Method: %c, Params: %s", method, params));
-
+	int success = parse_rpc_response(&method, &req_id, params, message);
+	LOG(LL_INFO, ("Parsed Method: %c, Req ID: %d, Params: %s", method, req_id, params));
+	if (!success) return;
+	
+	char topic[50];
 	if (method == 65) {
 		double flow_readings;
-		if (sscanf(params, "lf%lf", &flow_readings) == 1) {
+		if (sscanf(params, "lf%lf", &flow_readings) == 1) {		
 			LOG(LL_INFO, ("Flow readings %lf", flow_readings));
+			sprintf(topic, "v1/devices/me/rpc/response/%d", req_id);
+			mgos_mqtt_pubf(topic, 1, 0, "{rps: %lf}", flow_readings);
 		}
 	}
-
-	// else if (method == 30) {
-	// 	int red_i;
-	// 	if (sscanf(params, "i%d", &red_i) == 1) {
-	// 		brightness(red_i, 0, 0);
-	// 		// uart0_puts("#%ci255@");
-	// 	}
+	else if (method == 40) {
+		char message[40];
+		if (sscanf(params, "s%s", message) == 1) {
+			LOG(LL_INFO, ("Message printed on LCD %s", message));
+			sprintf(topic, "v1/devices/me/rpc/response/%d", req_id);
+			mgos_mqtt_pubf(topic, 1, 0, "{lcd_printed: %Q}", message);
+		}
+	}
 	// }
 	// else if (method == 31) {
 	// 	int green_i;
@@ -217,9 +223,12 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
 	else if (ev == MG_EV_MQTT_SUBACK) {
 		LOG(LL_INFO, ("Subscription %u acknowledged!", msg->message_id));
 	} 
-	else if (ev == MG_EV_MQTT_PUBLISH) {	
+	else if (ev == MG_EV_MQTT_PUBLISH) {
 		struct mg_str *s = &msg->payload;
 		LOG(LL_INFO, ("Got RPC command: [%.*s]", (int) s->len, s->p));
+		int req_id;
+		sscanf((&msg->topic)->p, "v1/devices/me/rpc/request/%d", &req_id);
+		LOG(LL_INFO, ("RPC req_id: [%d]", req_id));
 		
 		char *method = NULL, *intensity_str = NULL, *command = NULL;
 		int pin;
@@ -241,7 +250,7 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
 		}
 		else if (json_scanf(s->p, s->len, "{method: setColor, params: {red_i: %d, green_i: %d, blue_i: %d}}", &red_i, &green_i, &blue_i) == 3) {
 			LOG(LL_INFO, ("Got setColor RPC"));
-			set_colors(red_i, green_i, blue_i);
+			set_colors(req_id, red_i, green_i, blue_i);
 		}
 		else if (json_scanf(s->p, s->len, "{method: %Q, params: {command: %Q}}", &method, &command) == 2) {
 			LOG(LL_INFO, ("ThingsBoard RPC Remote Shell --> Method: %s & Command: %s",
@@ -249,10 +258,10 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
 			if (strcmp(method, "sendCommand") == 0) {
 				char lcd_message[40];
 				if (strcmp(command, "get_flow") == 0) {
-					get_flow();
+					get_flow(req_id);
 				}
 				else if (sscanf(command, "lcd_print %s", lcd_message) == 1) {
-					lcd_print(lcd_message);
+					lcd_print(req_id, lcd_message);
 				}
 			}
 		}
@@ -260,15 +269,15 @@ static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data
 			int intensity = atoi(intensity_str);
 			if (strcmp(method, "setRedIntensity") == 0) {
 				red_i = intensity;
-				set_colors(red_i, green_i, blue_i);
+				set_colors(req_id, red_i, green_i, blue_i);
 			}
 			else if (strcmp(method, "setGreenIntensity") == 0) {
 				green_i = intensity;
-				set_colors(red_i, green_i, blue_i);
+				set_colors(req_id, red_i, green_i, blue_i);
 			}
 			else if (strcmp(method, "setBlueIntensity") == 0) {
 				blue_i = intensity;
-				set_colors(red_i, green_i, blue_i);
+				set_colors(req_id, red_i, green_i, blue_i);
 			}
 		}
 		else {
