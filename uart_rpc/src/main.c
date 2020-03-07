@@ -151,6 +151,7 @@ static void uart_dispatcher(int uart_no, void *arg) {
 		if (sscanf(params, "lf%lf", &flow_readings) == 1) {		
 			LOG(LL_INFO, ("Flow readings %lf", flow_readings));
 			sprintf(topic, "v1/devices/me/rpc/response/%d", req_id);
+			LOG(LL_INFO, ("Response Topic %s", topic));
 			mgos_mqtt_pubf(topic, 1, 0, "{rps: %lf}", flow_readings);
 		}
 	}
@@ -159,7 +160,9 @@ static void uart_dispatcher(int uart_no, void *arg) {
 		if (sscanf(params, "s%s", message) == 1) {
 			LOG(LL_INFO, ("Message printed on LCD %s", message));
 			sprintf(topic, "v1/devices/me/rpc/response/%d", req_id);
-			mgos_mqtt_pubf(topic, 1, 0, "{lcd_printed: %Q}", message);
+			LOG(LL_INFO, ("Response Topic %s", topic));
+			char *json_message = json_asprintf("{lcd_message: %Q}", message);
+			mgos_mqtt_pub(topic, json_message, strlen(json_message), 1, 0);
 		}
 	}
 	// }

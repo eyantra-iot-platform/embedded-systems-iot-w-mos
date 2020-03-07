@@ -9,11 +9,19 @@ void create_rpc_request(char *message, char method, int req_id, char* params) {
 void create_rpc_response(char *message, char method, int req_id, char* params) {
   // # is the starting character
   // @ marks the end
-  create_rpc_response(message, method, req_id, params);
+  create_rpc_request(message, method, req_id, params);
 }
 
+// TODO: Accept empty params
 int parse_rpc_request(char* method, int* req_id, char* params, const char* message) {
-  return (sscanf(message, "%c%d%s", method, req_id, params) == 3);
+  int scanned_params = sscanf(message, "%c%d%s", method, req_id, params);
+  if (scanned_params == 3) {
+	return 1;
+  }
+  else if (scanned_params == 2 && strlen(params) == 0) {
+	return 1;
+  }
+  return 0;
 }
 
 int parse_rpc_response(char* method, int* req_id, char* params, const char* message) {
