@@ -9,7 +9,7 @@ int fetch_rpc_response(char* message, int uart_no) {
 	size_t rx_av = mgos_uart_read_avail(uart_no);
 	if (rx_av == 0) return 0;
 	mgos_uart_read_mbuf(uart_no, &lb, rx_av);
-	LOG(LL_INFO, ("Received %.*s", (int) rx_av, lb.buf));
+	LOG(LL_INFO, ("> %.*s", (int) rx_av, lb.buf));
 
 	int i = 0;
 	static int START_FOUND = 0;
@@ -18,12 +18,12 @@ int fetch_rpc_response(char* message, int uart_no) {
 		char curr_byte = lb.buf[i++];        
 		// if no data, continue
 		if (curr_byte == '#') {
-			LOG(LL_INFO, ("Start found at %d", i-1));
+			// LOG(LL_INFO, ("Start found at %d", i-1));
 			START_FOUND = 1;
 			message_ptr = 0;
 		}
 		else if (curr_byte == '@') {
-			LOG(LL_INFO, ("Stop found at %d", i-1));
+			// LOG(LL_INFO, ("Stop found at %d", i-1));
 			if (START_FOUND == 1) {
 				MSG_FOUND = 1;
 				break;
