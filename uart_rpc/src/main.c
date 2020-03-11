@@ -123,26 +123,6 @@ void lcd_print(int req_id, char* lcd_message) {
 	mgos_uart_printf(UART_NO, message);
 }
 
-// static void timer_cb(void *arg) {
-// 	/*
-// 	* Note: do not use mgos_uart_write to output to console UART (0 in our case).
-// 	* It will work, but output may be scrambled by console debug output.
-// 	*/
-	
-// 	// char message[50] = "#Ad255@"; //, params[50]; //, params[20], final_params[100];
-// 	// char message[50], params[50]; //, params[20], final_params[100];
-// 	// int intensity;
-// 	// encode_params(params, 0, "%d%d%d", r_lvl, g_lvl, b_lvl);
-// 	// encode_params(params, 0, "%d%d%d", r_lvl, g_lvl, b_lvl);
-// 	// create_rpc_request(message, code_method("getFlow"), "");
-
-// 	// LOG(LL_INFO, ("Message to be sent: %s", message));
-// 	// mgos_uart_printf(UART_NO, message);
-
-// 	blink();
-// 	(void) arg;
-// }
-
 static void uart_dispatcher(int uart_no, void *arg) {
 	// memory bufffers grow when needed. You can enter data at the end
 	// or at any arbitrary positions.
@@ -183,25 +163,6 @@ static void uart_dispatcher(int uart_no, void *arg) {
 			mgos_mqtt_pubf(topic, 1, 0, "{line_sensor: %d}", lfa_readings);
 		}
 	}
-	// }
-	// else if (method == 31) {
-	// 	int green_i;
-	// 	if (sscanf(params, "i%d", &green_i) == 1) {
-	// 		brightness(0, green_i, 0);
-	// 	}
-	// }
-	// else if (method == 32) {
-	// 	int blue_i;
-	// 	if (sscanf(params, "i%d", &blue_i) == 1) {
-	// 		brightness(0, 0, blue_i);
-	// 	}
-	// }
-	// else if (method == 33) {
-	// 	int red_i, green_i, blue_i;
-	// 	if (sscanf(params, "i%d,i%d,i%d", &red_i, &green_i, &blue_i) == 3) {
-	// 		brightness(red_i, green_i, blue_i);
-	// 	}
-	// }
   	(void) arg;
 }
 
