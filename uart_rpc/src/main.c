@@ -43,6 +43,9 @@ char code_method(char* method_name) {
 	else if (strcmp(method_name, "lcdPrint") == 0) {
 		return 40;
 	}
+	else if (strcmp(method_name, "getLFA") == 0) {
+		return 41;
+	}
 	return -1;
 }
 
@@ -96,6 +99,15 @@ void get_flow(int req_id) {
 	char message[50]; //, params[20], final_params[100];
 	// int intensity;
 	create_rpc_request(message, code_method("getFlow"), req_id, "");
+
+	LOG(LL_INFO, ("Message to be sent: %s", message));
+	mgos_uart_printf(UART_NO, message);
+}
+
+void get_lfa(int req_id) {
+	char message[50]; //, params[20], final_params[100];
+	// int intensity;
+	create_rpc_request(message, code_method("getLFA"), req_id, "");
 
 	LOG(LL_INFO, ("Message to be sent: %s", message));
 	mgos_uart_printf(UART_NO, message);
@@ -163,6 +175,14 @@ static void uart_dispatcher(int uart_no, void *arg) {
 			mgos_mqtt_pub(topic, json_message, strlen(json_message), 1, 0);
 		}
 	}
+	else if (method == 41) {
+		int lfa_readings;
+		if (sscanf(params, "d%d", &lfa_readings) == 1) {		
+			sprintf(topic, "v1/devices/me/rpc/response/%d", req_id);
+			LOG(LL_INFO, ("LFA readings %d", lfa_readings));
+			mgos_mqtt_pubf(topic, 1, 0, "{line_sensor: %d}", lfa_readings);
+		}
+	}
 	// }
 	// else if (method == 31) {
 	// 	int green_i;
@@ -210,92 +230,6 @@ void button_handler (int pin, void *arg) {
 	mgos_mqtt_pub(req_topic, req_msg, strlen(req_msg), 1, 0);
 	LOG(LL_INFO, ("Sent %s to %s", req_topic, req_msg));
 	(void) arg;
-}
-
-static void ev_handler(struct mg_connection *c, int ev, void *p, void *user_data) {
-	struct mg_mqtt_message *msg = (struct mg_mqtt_message *) p;
-
-	if (ev == MG_EV_MQTT_CONNACK) {
-		LOG(LL_INFO, ("CONNACK: %d", msg->connack_ret_code));
-		struct mg_str topic = mg_mk_str("v1/devices/me/rpc/request/+");
-		mgos_mqtt_global_subscribe(topic, ev_handler, NULL);
-		LOG(LL_INFO, ("Subscribed to RPC Handler --> %.*s", (int)topic.len, topic.p));
-	} 
-	else if (ev == MG_EV_MQTT_SUBACK) {
-		LOG(LL_INFO, ("Subscription %u acknowledged!", msg->message_id));
-	} 
-	else if (ev == MG_EV_MQTT_PUBLISH) {
-		struct mg_str *s = &msg->payload;
-		LOG(LL_INFO, ("Got RPC command: [%.*s]", (int) s->len, s->p));
-		int req_id;
-		sscanf((&msg->topic)->p, "v1/devices/me/rpc/request/%d", &req_id);
-		LOG(LL_INFO, ("RPC req_id: [%d]", req_id));
-		
-		char *method = NULL, *param_message = NULL, *command = NULL;
-		int pin;
-		
-		/* Our subscription is at QoS 1, we must acknowledge messages sent to us. */
-		mg_mqtt_puback(c, msg->message_id);
-		if (json_scanf(s->p, s->len, "{method: %Q, params: {pin: %d}}", &method, &pin) == 2) {
-			LOG(LL_INFO, ("Method: %s, Pin: %d", method, pin));
-			if (strcmp(method, "toggleLED")==0) {
-				// char *res_topic
-				/* Set GPIO pin to a given state */
-				mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
-				mgos_gpio_toggle(pin);
-				
-				// TODO:
-				// send a response
-				// mgos_mqtt_pub(strcat("v1/devices/me/rpc/response/$request_id", , const void *message, size_t len, int qos, bool retain);
-			}
-		}
-		else if (json_scanf(s->p, s->len, "{method: setColor, params: {red_i: %d, green_i: %d, blue_i: %d}}", &red_i, &green_i, &blue_i) == 3) {
-			LOG(LL_INFO, ("Got setColor RPC"));
-			set_colors(req_id, red_i, green_i, blue_i);
-		}
-		// else if (json_scanf(s->p, s->len, "{method: %Q, params: {command: %Q}}", &method, &command) == 2) {
-		// 	LOG(LL_INFO, ("ThingsBoard RPC Remote Shell --> Method: %s & Command: %s",
-		// 	method, command));
-		// 	if (strcmp(method, "sendCommand") == 0) {
-		// 		char lcd_message[40];
-		// 		if (strcmp(command, "get_flow") == 0) {
-		// 			get_flow(req_id);
-		// 		}
-		// 		else if (sscanf(command, "lcd_print %s", lcd_message) == 1) {
-		// 			lcd_print(req_id, lcd_message);
-		// 		}
-		// 	}
-		// }
-		else if (json_scanf(s->p, s->len, "{method: %Q, params: %Q}", &method, &param_message) == 2) {
-			if (strcmp(method, "setRedIntensity") == 0) {
-				int intensity = atoi(param_message);
-				red_i = intensity;
-				set_colors(req_id, red_i, green_i, blue_i);
-			}
-			else if (strcmp(method, "setGreenIntensity") == 0) {
-				int intensity = atoi(param_message);
-				green_i = intensity;
-				set_colors(req_id, red_i, green_i, blue_i);
-			}
-			else if (strcmp(method, "setBlueIntensity") == 0) {
-				int intensity = atoi(param_message);
-				blue_i = intensity;
-				set_colors(req_id, red_i, green_i, blue_i);
-			}
-			else if (strcmp(method, "lcd_print") == 0) {
-				lcd_print(req_id, param_message);
-			}
-		}
-		else if (json_scanf(s->p, s->len, "{method: %Q}", &method) == 1) {
-			if (strcmp(method, "get_flow") == 0) {
-				get_flow(req_id);
-			}
-		}
-		else {
-			LOG(LL_INFO, ("{error: {code: %d, message: %s}}", 500, "unknown command"));
-		}
-	}
-	(void) user_data;
 }
 
 void sub_handler(struct mg_connection *nc, const char *topic, int topic_len,
@@ -352,6 +286,9 @@ const char *msg, int msg_len, void *ud) {
 		if (strcmp(method, "get_flow") == 0) {
 			get_flow(req_id);
 		}
+		else if (strcmp(method, "get_lfa") == 0) {
+			get_lfa(req_id);
+		}
 	}
 	else {
 		LOG(LL_INFO, ("{error: {code: %d, message: %s}}", 500, "unknown command"));
@@ -394,7 +331,5 @@ enum mgos_app_init_result mgos_app_init(void) {
 	// disabling ev_handler
 	// mgos_mqtt_add_global_handler(ev_handler, NULL);
 	mgos_mqtt_sub("v1/devices/me/rpc/request/+", sub_handler, NULL);
-
-	(void)ev_handler;
 	return MGOS_APP_INIT_SUCCESS;
 }
