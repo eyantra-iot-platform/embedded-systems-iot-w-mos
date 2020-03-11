@@ -59,42 +59,6 @@ void set_colors(int req_id, int r_lvl, int g_lvl, int b_lvl) {
   mgos_uart_printf(UART_NO, message);
 }
 
-void glow_red(int req_id) {
-	LOG(LL_INFO, ("Glowing red"));
-	set_colors(req_id, 255, 0, 0);
-}
-
-void glow_green(int req_id) {
-	LOG(LL_INFO, ("Glowing green"));
-	set_colors(req_id, 0, 255, 0);
-}
-
-void glow_blue(int req_id) {
-	LOG(LL_INFO, ("Glowing blue"));
-	set_colors(req_id, 0, 0, 255);
-}
-
-void glow_off(int req_id) {
-	LOG(LL_INFO, ("Glowing off"));
-	set_colors(req_id, 0, 0, 0);
-}
-
-void blink(int req_id) {
-	int color = i++ % n_colors;
-	if (color == 0) {
-    	glow_red(req_id);
-  	}
-	else if (color == 1) {
-		glow_green(req_id);
-	}
-	else if (color == 2) {
-		glow_blue(req_id);
-	}
-	else if (color == 3) {
-		glow_off(req_id);
-	}
-}
-
 void get_flow(int req_id) {
 	char message[50]; //, params[20], final_params[100];
 	// int intensity;
@@ -126,7 +90,7 @@ void lcd_print(int req_id, char* lcd_message) {
 static void uart_dispatcher(int uart_no, void *arg) {
 	// memory bufffers grow when needed. You can enter data at the end
 	// or at any arbitrary positions.
-	static char message[200] = {'\0'};
+	static char message[2048] = {'\0'};
 	char method, params[200];
 	int req_id;
 	// default method
@@ -195,6 +159,7 @@ void button_handler (int pin, void *arg) {
 
 void sub_handler(struct mg_connection *nc, const char *topic, int topic_len,
 const char *msg, int msg_len, void *ud) {
+	int ERR_FLAG = 1;
 	LOG(LL_INFO, ("Got RPC command: [%.*s]", msg_len, msg));
 	int req_id;
 	sscanf(topic, "v1/devices/me/rpc/request/%d", &req_id);
@@ -209,6 +174,7 @@ const char *msg, int msg_len, void *ud) {
 	if (json_scanf(msg, msg_len, "{method: %Q, params: {pin: %d}}", &method, &pin) == 2) {
 		LOG(LL_INFO, ("Method: %s, Pin: %d", method, pin));
 		if (strcmp(method, "toggleLED")==0) {
+			ERR_FLAG = 0;
 			// char *res_topic
 			/* Set GPIO pin to a given state */
 			mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_OUTPUT);
@@ -219,39 +185,50 @@ const char *msg, int msg_len, void *ud) {
 			// mgos_mqtt_pub(strcat("v1/devices/me/rpc/response/$request_id", , const void *message, size_t len, int qos, bool retain);
 		}
 	}
-	else if (json_scanf(msg, msg_len, "{method: setColor, params: {red_i: %d, green_i: %d, blue_i: %d}}", &red_i, &green_i, &blue_i) == 3) {
-		LOG(LL_INFO, ("Got setColor RPC"));
-		set_colors(req_id, red_i, green_i, blue_i);
+	else if (json_scanf(msg, msg_len, "{method: %Q, params: {red_i: %d, green_i: %d, blue_i: %d}}", 
+	&method, &red_i, &green_i, &blue_i) == 4) {
+		if (strcmp(method, "setColor") == 0) {
+			ERR_FLAG = 0;
+			LOG(LL_INFO, ("Got setColor RPC"));
+			set_colors(req_id, red_i, green_i, blue_i);
+		} 
 	}
 	else if (json_scanf(msg, msg_len, "{method: %Q, params: %Q}", &method, &param_message) == 2) {
 		if (strcmp(method, "setRedIntensity") == 0) {
+			ERR_FLAG = 0;
 			int intensity = atoi(param_message);
 			red_i = intensity;
 			set_colors(req_id, red_i, green_i, blue_i);
 		}
 		else if (strcmp(method, "setGreenIntensity") == 0) {
+			ERR_FLAG = 0;
 			int intensity = atoi(param_message);
 			green_i = intensity;
 			set_colors(req_id, red_i, green_i, blue_i);
 		}
 		else if (strcmp(method, "setBlueIntensity") == 0) {
+			ERR_FLAG = 0;
 			int intensity = atoi(param_message);
 			blue_i = intensity;
 			set_colors(req_id, red_i, green_i, blue_i);
 		}
 		else if (strcmp(method, "lcd_print") == 0) {
+			ERR_FLAG = 0;
 			lcd_print(req_id, param_message);
 		}
 	}
 	else if (json_scanf(msg, msg_len, "{method: %Q}", &method) == 1) {
 		if (strcmp(method, "get_flow") == 0) {
+			ERR_FLAG = 0;
 			get_flow(req_id);
 		}
 		else if (strcmp(method, "get_lfa") == 0) {
+			ERR_FLAG = 0;
 			get_lfa(req_id);
 		}
 	}
-	else {
+
+	if (ERR_FLAG == 1) {
 		LOG(LL_INFO, ("{error: {code: %d, message: %s}}", 500, "unknown command"));
 	}
 }
