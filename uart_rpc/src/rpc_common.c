@@ -17,10 +17,10 @@ int parse_rpc_request(char* method, int* req_id, char* params, const char* messa
   strcpy(params, "");
   int scanned_params = sscanf(message, "%c%d%[^\n]s", method, req_id, params);
   if (scanned_params == 3) {
-		return 1;
+  	return 1;
   }
   else if (scanned_params == 2 && strlen(params) == 0) {
-		return 1;
+  	return 1;
   }
   return 0;
 }

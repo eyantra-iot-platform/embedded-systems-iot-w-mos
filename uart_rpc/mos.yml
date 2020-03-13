@@ -30,7 +30,7 @@ config_schema:
   - ["connecti_lights.freq", "i", 5000, {title: "Frequency of PWM"}]
   - ["mqtt.enable", true]
   - ["mqtt.server", "thingsboard.e-yantra.org:1883"]
-  - ["mqtt.client_id", "egij2asdasn90"]
+  - ["mqtt.client_id", "egij2asdas3rn90"]
   - ["mqtt.user", "m4B4ruS9FXkoxaDk1EVe"]
   - ["wifi.sta.enable", true]
   - ["wifi.sta.ssid", "kirito"]

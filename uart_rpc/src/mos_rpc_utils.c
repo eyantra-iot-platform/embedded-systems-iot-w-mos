@@ -10,6 +10,8 @@ int fetch_rpc_response(char* message, int uart_no) {
 	if (rx_av == 0) return 0;
 	mgos_uart_read_mbuf(uart_no, &lb, rx_av);
 	LOG(LL_INFO, ("> %.*s", (int) rx_av, lb.buf));
+	LOG(LL_INFO, ("MBuf lb length: %d, size: %d", lb.len, lb.size)); 
+	LOG(LL_INFO, ("Full buffer: %.*s", (int) lb.len, lb.buf));
 
 	int i = 0;
 	static int START_FOUND = 0;
